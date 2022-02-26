@@ -146,5 +146,3 @@ pub fn sm3_hash_file(input_file: &str) -> String {
     let input_data = std::fs::read(input_file).unwrap();
     sm3_hash(&input_data)
 }
-
-

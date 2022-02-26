@@ -420,8 +420,3 @@ impl CryptSM2 {
         verify_with_sm3(data, sign, &self.public_key)
     }
 }
-
-
-
-
-
