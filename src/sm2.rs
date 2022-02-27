@@ -55,7 +55,7 @@ fn random_hex(x: usize) -> String {
 
 fn sm3_kdf(z: &[u8], klen: usize) -> String {
     let mut ct = 0x00000001;
-    let rcnt = klen.div_ceil(&32);
+    let rcnt = num_integer::Integer::div_ceil(&klen, &32);
     let zin = hex::decode(&z).unwrap();
     let mut ha = "".to_string();
     let mut msg = zin.clone();
