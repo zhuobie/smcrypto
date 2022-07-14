@@ -1,152 +1,85 @@
-[中文版](README.zh_CN.md)
-
 # smcrypto
 
-A rust implementation of China's standards of encryption algorithms(SM2/SM3/SM4). Thanks for the python project [GMSSL](https://github.com/duanhongyi/gmssl).
+A rust implementation of China's standards of encryption algorithms(SM2/SM3/SM4).
 
-## Installation
+## Quick Start
 
-To use in your own rust project, add `Cargo.toml` of the `[dependencies]` item: 
-
-```
-smcrypto = "0.1.0"
-```
-
-Then in your `main.rs`: 
+### SM3
 
 ```
-use smcrypto::*;
+let hash = sm3::sm3_hash(b"abc");
+assert_eq!(hash, "66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0");
 ```
 
-## SM3
+### SM2 Key Generate
+
+Note that the public key is in hexadecimal format and does not contain the "04" prefix.
 
 ```
-let sm3_hash = sm3::sm3_hash(b"abc");
-println!("sm3 hash is {}", sm3_hash);
+let (sk, pk) = sm2::gen_keypair();
 ```
 
-You can hash one file as follows: 
+### SM2 Sign/Verify
 
 ```
-let sm3_hash_file = sm3::sm3_hash_file("C:/Users/yumeng/Desktop/driver.exe");
-println!("sm3 hash file is {}", sm3_hash_file);
+let sign_ctx = sm2::Sign::new(&sk);
+let sign = sign_ctx.sign(b"abc");
+let verify_ctx = sm2::Verify::new(&pk);
+let verify = verify_ctx.verify(b"abc", &sign);
+assert_eq!(verify, true);
 ```
 
-## SM2
-
-### Generate Key Pair
+### SM2 Encrypt/Decrypt
 
 ```
-let (private_key, public_key) = sm2::gen_keypair();
+let enc_ctx = sm2::Encrypt::new(&pk);
+let enc = enc_ctx.encrypt(b"abc");
+let dec_ctx = sm2::Decrypt::new(&sk);
+let dec = dec_ctx.decrypt(&enc);
+assert_eq!(String::from_utf8(dec).unwrap(), "abc");
 ```
 
-You can use `OpenSSL` to generate a key pair. `openssl` must be installed and the executable file `openssl` should in system PATH.
+### SM2 Key Exchange
 
 ```
-let (private_key, public_key) = sm2::gen_keypair_openssl();
+// Step 1
+// a side
+let ida = b"id_a@company.com";
+let (ska, _) = sm2::gen_keypair();
+let keyexchange_a = sm2::KeyExchange::new(ida, &ska);
+let (a2b, rska) = keyexchange_a.keyexchange_1ab(16);
+// b side
+let idb = b"id_b@company.com";
+let (skb, _) = sm2::gen_keypair();
+let keyexchange_b = sm2::KeyExchange::new(idb, &skb);
+let (b2a, rskb) = keyexchange_b.keyexchange_1ab(16);
+// Step 2
+// a side
+let ka = keyexchange_a.keyexchange_2a(&rska, &b2a);
+// b side
+let kb = keyexchange_b.keyexchange_2b(&rskb, &a2b);
+// Step 3
+assert_eq!(ka.k, kb.k);
+assert_eq!(ka.s12, kb.s12);
 ```
 
-You can generate a pem file by `openssl`, and then import it.
+### SM4 ECB Encrypt/Decrypt
 
 ```
-openssl ecparam -genkey -name SM2 -out sk.pem
-```
-
-then: 
-
-```
-let (private_key, public_key) = sm2::keypair_from_pem_file("C:/Users/yumeng/sk.pem");
-```
-
-### Export Public Key 
-
-```
-let pk = sm2::pk_from_sk("f63afd2aa3550a83362e54dd4111a21043d4498f102eed96b70330bd63e6a8e7");
-```
-
-### Initialize CryptSM2
-
-When the `mode` parameter is `1`, it uses `C1C3C2`, otherwise uses `C1C2C3`.
-
-```
-let sm2 = sm2::CryptSM2::new(&private_key, &public_key, 1);
-```
-
-### Sign and Verify
-
-```
-let data = b"I love Rust.";
-let sign = sm2.sign(data);
-println!("sm2 sign result is {}", sign);
-let verify = sm2.verify(sign, data);
-println!("sm2 verify result is {}", verify);
-```
-
-### Sign and Verify using SM3
-
-```
-let sign_sm3 = sm2.sign_with_sm3(data);
-println!("sm2 sign_sm3 result is {}", sign_sm3);
-let verify_sm3 = sm2.verify_with_sm3(data, sign_sm3);
-println!("sm2 verify_sm3 result is {}", verify_sm3);
-```
-
-### Encrypt and Decrypt
-
-```
-let encrypt = sm2.encrypt(data);
-println!("sm2 encryped data is {}", encrypt);
-let decrypt = sm2.decrypt(encrypt);
-println!("sm2 decryped data is {}", String::from_utf8(decrypt).unwrap());
-```
-
-### Encrypt and Decrypt Files
-
-```
-sm2.encrypt_to_file("C:/Users/yumeng/Desktop/putty.txt", "C:/Users/yumeng/Desktop/putty_sm2_crypt.txt");
-sm2.decrypt_from_file("C:/Users/yumeng/Desktop/putty_sm2_crypt.txt", "C:/Users/yumeng/Desktop/putty_sm2_decrypt.txt");
-```
-
-## SM4
-
-### Specify a Key
-
-```
-let key = "1234567812345678";
-let value = b"A language empowering everyone to build reliable and efficient software.";
-let iv = "0000000000000000";
-```
-
-### Encrypt and Decrypt(ECB)
-
-```
+let key = b"1234567812345678";
 let sm4_ecb = sm4::CryptSM4ECB::new(key);
-let sm4_ecb_encrypt = sm4_ecb.encrypt_ecb(value);
-println!("sm4 ecb encrypt is {}", sm4_ecb_encrypt);
-let sm4_ecb_decrypt = sm4_ecb.decrypt_ecb(sm4_ecb_encrypt);
-println!("sm4 ecb decrypt string is {}", String::from_utf8(sm4_ecb_decrypt).unwrap());
+let enc_ecb = sm4_ecb.encrypt_ecb(b"abc");
+let dec_ecb = sm4_ecb.decrypt_ecb(&enc_ecb);
+assert_eq!(String::from_utf8(dec_ecb).unwrap(), "abc");
 ```
 
-### Encrypt and Decrypt Files(ECB)
+### SM4 CBC Encrypt/Decrypt
 
 ```
-sm4_ecb.encrypt_to_file("C:/Users/yumeng/Desktop/putty.txt", "C:/Users/yumeng/Desktop/putty_encrypt_ecb.txt");
-sm4_ecb.decrypt_from_file("C:/Users/yumeng/Desktop/putty_encrypt_ecb.txt", "C:/Users/yumeng/Desktop/putty_decrypt_ecb.txt");
-```
-
-### Encrypt and Decrypt(CBC)
-
-```
+let key = b"1234567812345678";
+let iv = b"0000000000000000";
 let sm4_cbc = sm4::CryptSM4CBC::new(key, iv);
-let sm4_cbc_encrypt = sm4_cbc.encrypt_cbc(value);
-println!("sm4 cbc encrypt is {}", sm4_cbc_encrypt);
-let sm4_cbc_decrypt = sm4_cbc.decrypt_cbc(sm4_cbc_encrypt);
-println!("sm4 cbc decrypt string is {}", String::from_utf8(sm4_cbc_decrypt).unwrap());
-```
-
-### Encrypt and Decrypt Files(CBC)
-
-```
-sm4_cbc.encrypt_to_file("C:/Users/yumeng/Desktop/putty.txt", "C:/Users/yumeng/Desktop/putty_encrypt_cbc.txt");
-sm4_cbc.decrypt_from_file("C:/Users/yumeng/Desktop/putty_encrypt_cbc.txt", "C:/Users/yumeng/Desktop/putty_decrypt_cbc.txt");
+let enc_cbc = sm4_cbc.encrypt_cbc(b"abc");
+let dec_cbc = sm4_cbc.decrypt_cbc(&enc_cbc);
+assert_eq!(String::from_utf8(dec_cbc).unwrap(), "abc");
 ```
