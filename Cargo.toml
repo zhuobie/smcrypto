@@ -9,13 +9,21 @@ license = "MIT"
 repository = "https://github.com/zhuobie/smcrypto"
 
 [dependencies]
-bytes = "1.1.0"
-num-traits = "0.2.14"
+bytes = "1.2.1"
+num-traits = "0.2.15"
 num-bigint = "0.4.3"
 hex = "0.4.3"
-num-integer = "0.1.44"
-rand = "0.8.4"
-pem = "1.0.2"
-lazy_static = "1.4.0"
-base64 = "0.13.0"
-yasna = {version = "0.5.0", features = ["num-bigint"]}
+num-integer = "0.1.45"
+rand = "0.8.5"
+pem = "1.1.0"
+base64 = "0.13.1"
+yasna = { version = "0.5.0", features = ["num-bigint"] }
+once_cell = "1.16.0"
+
+[dev-dependencies]
+# benchmarking 
+criterion = "^0.4"
+
+[[bench]]
+name = "benchmark"
+harness = false
