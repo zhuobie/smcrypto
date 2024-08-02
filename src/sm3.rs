@@ -42,7 +42,7 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
     2055708042, 2055708042, 2055708042, 2055708042, 2055708042, 2055708042,
     2055708042, 2055708042, 2055708042, 2055708042
     ];
-    let mut w: Vec<u32> = Vec::new();
+    let mut w: Vec<u32> = Vec::with_capacity(68);
     for i in 0..16 {
         let mut weight = 0x1000000;
         let mut data: u32 = 0;
@@ -50,15 +50,13 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
             data = data.wrapping_add(b_i[k] * weight);
             weight /= 0x100;
         }
-        w.push(data);
+        w[i] = data;
     }
     for j in 16..68 {
-        w.push(0);
         w[j] = sm3_p_1(w[j - 16] ^ w[j - 9] ^ w[j - 3].rotate_left(15)) ^ w[j - 13].rotate_left(7) ^ w[j - 6];
     }
-    let mut w_1: Vec<u32> = Vec::new();
+    let mut w_1: Vec<u32> = Vec::with_capacity(64);
     for j in 0..64 {
-        w_1.push(0);
         w_1[j] = w[j] ^ w[j + 4];
     }
     let mut a = v_i[0];
@@ -91,10 +89,10 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
         g = g & 0xFFFFFFFF;
         h = h & 0xFFFFFFFF;
     }
+    let mut cf: Vec<u32> = Vec::with_capacity(8);
     let v_j: Vec<u32> = vec![a, b, c, d, e, f, g, h];
-    let mut cf: Vec<u32> = Vec::new();
     for i in 0..8 {
-        cf.push(v_j[i] ^ v_i[i]);
+        cf[i] = v_j[i] ^ v_i[i];
     }
     cf
 }
