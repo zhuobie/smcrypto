@@ -1,3 +1,5 @@
+use std::vec;
+
 fn sm3_ff_j(x: u32, y: u32, z: u32, j: u32) -> u32 {
     let mut ret = 0;
     if j < 16 {
@@ -68,7 +70,7 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
     let mut g = v_i[6];
     let mut h = v_i[7];
     for j in 0..64 {
-        let ss_1 = ((a.rotate_left(12).wrapping_add(e).wrapping_add(t_j[j].rotate_left(j as u32))) & 0xffffffff).rotate_left(7);        
+        let ss_1 = ((a.rotate_left(12).wrapping_add(e).wrapping_add(t_j[j].rotate_left(j as u32))) & 0xffffffff).rotate_left(7);
         let ss_2 = ss_1 ^ a.rotate_left(12);
         let tt_1 = (sm3_ff_j(a, b, c, j as u32).wrapping_add(d).wrapping_add(ss_2).wrapping_add(w_1[j])) & 0xffffffff;
         let tt_2 = (sm3_gg_j(e, f, g, j as u32).wrapping_add(h).wrapping_add(ss_1).wrapping_add(w[j])) & 0xffffffff;
@@ -97,7 +99,7 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
     cf
 }
 
-pub fn sm3_hash(msg: &[u8]) -> String {
+pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
     let iv: Vec<u32> = vec![
     1937774191, 1226093241, 388252375, 3666478592,
     2842636476, 372324522, 3817729613, 2969243214,
@@ -115,7 +117,7 @@ pub fn sm3_hash(msg: &[u8]) -> String {
         msg.push(0x00);
     }
     let mut bit_length: usize = len1 * 8;
-    let mut bit_length_str: Vec<usize> = vec![bit_length % 0x100]; 
+    let mut bit_length_str: Vec<usize> = vec![bit_length % 0x100];
     for _ in 0..7 {
         bit_length /= 0x100;
         bit_length_str.push(bit_length % 0x100);
@@ -134,15 +136,21 @@ pub fn sm3_hash(msg: &[u8]) -> String {
         v.push(sm3_cf(&v[i], &b[i]));
     }
     let y = &v[group_count - 1 + 1];
-    let mut result = "".to_string();
-    for i in y {
-        result += &format!("{:08x}", i);
-    }
-    result
+    y.into_iter().flat_map(|x| x.to_be_bytes()).collect()
+}
+
+pub fn sm3_hash(msg: &[u8]) -> String {
+    let hash = sm3_hash_raw(msg);
+    hash.iter().map(|x| format!("{:02x}", x)).collect()
 }
 
 pub fn sm3_hash_file(input_file: &str) -> String {
     let input_file = std::path::Path::new(input_file);
     let input_data = std::fs::read(input_file).unwrap();
     sm3_hash(&input_data)
+}
+
+pub fn sm3_hash_string(msg_str: &str) -> String {
+    let msg = msg_str.as_bytes();
+    sm3_hash(msg)
 }
