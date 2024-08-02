@@ -8,7 +8,6 @@ use std::process::Command;
 use std::path::Path;
 use std::fs;
 use std::borrow::Cow;
-use bytes::{BytesMut, BufMut};
 
 static PARA_LEN: usize = 64;
 static ECC_N: &str = "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123";

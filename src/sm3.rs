@@ -50,14 +50,14 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
             data = data.wrapping_add(b_i[k] * weight);
             weight /= 0x100;
         }
-        w[i] = data;
+        w.push(data);
     }
     for j in 16..68 {
-        w[j] = sm3_p_1(w[j - 16] ^ w[j - 9] ^ w[j - 3].rotate_left(15)) ^ w[j - 13].rotate_left(7) ^ w[j - 6];
+        w.push(sm3_p_1(w[j - 16] ^ w[j - 9] ^ w[j - 3].rotate_left(15)) ^ w[j - 13].rotate_left(7) ^ w[j - 6]);
     }
     let mut w_1: Vec<u32> = Vec::with_capacity(64);
     for j in 0..64 {
-        w_1[j] = w[j] ^ w[j + 4];
+        w_1.push( w[j] ^ w[j + 4]);
     }
     let mut a = v_i[0];
     let mut b = v_i[1];
@@ -92,12 +92,12 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
     let mut cf: Vec<u32> = Vec::with_capacity(8);
     let v_j: Vec<u32> = vec![a, b, c, d, e, f, g, h];
     for i in 0..8 {
-        cf[i] = v_j[i] ^ v_i[i];
+        cf.push(v_j[i] ^ v_i[i]);
     }
     cf
 }
 
-pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
+pub fn _sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
     let iv: Vec<u32> = vec![
     1937774191, 1226093241, 388252375, 3666478592,
     2842636476, 372324522, 3817729613, 2969243214,
@@ -134,6 +134,57 @@ pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
         v.push(sm3_cf(&v[i], &b[i]));
     }
     let y = &v[group_count - 1 + 1];
+    y.into_iter().flat_map(|x| x.to_be_bytes()).collect()
+}
+
+pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
+    let iv: Vec<u32> = vec![
+    1937774191, 1226093241, 388252375, 3666478592,
+    2842636476, 372324522, 3817729613, 2969243214,
+    ];
+    let len = msg.len();
+    let reserve = len % 64 + 1;
+    let len_pad = match reserve > 56 {
+        true => len + 130 - reserve,
+        false => len + 66 - reserve
+    };
+    let range_end = match reserve > 56 {
+        true => 120,
+        false => 56
+    };
+    let mut msg_pad: Vec<u8> = Vec::with_capacity(len_pad);
+    msg_pad.extend_from_slice(msg);
+    msg_pad.push(0x80);
+    for _ in reserve..range_end {
+        msg_pad.push(0x00);
+    }
+    let mut bit_length: usize = len * 8;
+    let mut bit_length_str: Vec<usize> = Vec::with_capacity(8);
+    bit_length_str.push(bit_length % 0x100);
+    for _ in 0..7 {
+        bit_length /= 0x100;
+        bit_length_str.push(bit_length % 0x100);
+    }
+    for i in 0..8 {
+        msg_pad.push(bit_length_str[7 - i] as u8);
+    }
+    let group_count: usize = len_pad / 64;
+    let mut b: Vec<Vec<u32>> = Vec::with_capacity(group_count);
+    // for _ in 0..group_count {
+    //     b.push(Vec::with_capacity(64));
+    // }
+    for i in 0..group_count {
+        b.push(msg_pad[(i * 64)..((i + 1) * 64)].iter().map(|x| x.to_be() as u32).collect());
+    }
+    let mut v: Vec<Vec<u32>> = Vec::with_capacity(group_count + 1);
+    // for _ in 0..(group_count + 1) {
+    //     v.push(Vec::with_capacity(8));
+    // }
+    v.push(iv);
+    for i in 0..group_count {
+        v.push(sm3_cf(&v[i], &b[i]));
+    }
+    let y = &v[group_count];
     y.into_iter().flat_map(|x| x.to_be_bytes()).collect()
 }
 
