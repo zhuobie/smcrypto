@@ -185,13 +185,12 @@ fn add_point(p1: Point, p2: Point) -> Point {
 fn convert_jacb_to_nor(point: Point) -> Point {
     let ecc_p: BigUint = BigUint::from_str_radix(ECC_P, 16).unwrap();
     let (x, y, z) = (point.x, point.y, point.z);
-    let z_1 = z.clone();
     let z_inv: BigUint = z.modpow(&(&ecc_p - BigUint::new(vec![2])), &ecc_p);
     let z_invsquar: BigUint = (&z_inv * &z_inv) % &ecc_p;
     let z_invqube: BigUint = (&z_invsquar * &z_inv) % &ecc_p;
     let x_new: BigUint = (&x * &z_invsquar) % &ecc_p;
     let y_new: BigUint = (&y * &z_invqube) % &ecc_p;
-    let z_new: BigUint = (&z_1 * &z_inv) % &ecc_p;
+    let z_new: BigUint = (&z * &z_inv) % &ecc_p;
     if z_new == BigUint::one() {
         Point {
             x: x_new, 
