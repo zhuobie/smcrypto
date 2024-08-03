@@ -16,7 +16,6 @@ static ECC_G: &str = "32c4ae2c1f1981195f9904466a39c9948fe30bbff2660be1715a458933
 static ECC_A: &str = "FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC";
 static ECC_B: &str = "28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93";
 
-#[macro_export]
 macro_rules! format_hex {
     ($a: expr) => {
         format!("{:0width$x}", $a, width = PARA_LEN)
@@ -67,7 +66,6 @@ fn concvec(vec1: &[u8], vec2: &[u8]) -> Vec<u8> {
     vec1
 }
 
-#[macro_export]
 macro_rules! concvec {
     ($a: expr) => {
         $a.to_vec()
