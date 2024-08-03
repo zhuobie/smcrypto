@@ -170,19 +170,19 @@ pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
     }
     let group_count: usize = len_pad / 64;
     let mut b: Vec<Vec<u32>> = Vec::with_capacity(group_count);
-    // for _ in 0..group_count {
-    //     b.push(Vec::with_capacity(64));
-    // }
+    for _ in 0..group_count {
+        b.push(Vec::with_capacity(64));
+    }
     for i in 0..group_count {
-        b.push(msg_pad[(i * 64)..((i + 1) * 64)].iter().map(|x| x.to_be() as u32).collect());
+        b[i] = msg_pad[(i * 64)..((i + 1) * 64)].iter().map(|x| x.to_be() as u32).collect();
     }
     let mut v: Vec<Vec<u32>> = Vec::with_capacity(group_count + 1);
-    // for _ in 0..(group_count + 1) {
-    //     v.push(Vec::with_capacity(8));
-    // }
-    v.push(iv);
+    for _ in 0..(group_count + 1) {
+        v.push(Vec::with_capacity(8));
+    }
+    v[0] = iv;
     for i in 0..group_count {
-        v.push(sm3_cf(&v[i], &b[i]));
+        v[i + 1] = sm3_cf(&v[i], &b[i]);
     }
     let y = &v[group_count];
     y.into_iter().flat_map(|x| x.to_be_bytes()).collect()
