@@ -97,46 +97,6 @@ fn sm3_cf(v_i: &Vec<u32>, b_i: &Vec<u32>) -> Vec<u32> {
     cf
 }
 
-pub fn _sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
-    let iv: Vec<u32> = vec![
-    1937774191, 1226093241, 388252375, 3666478592,
-    2842636476, 372324522, 3817729613, 2969243214,
-    ];
-    let mut msg = msg.to_vec();
-    let len1 = msg.len();
-    let mut reserve1 = len1 % 64;
-    msg.push(0x80);
-    reserve1 += 1;
-    let mut range_end = 56;
-    if reserve1 > range_end {
-        range_end += 64;
-    }
-    for _ in reserve1..range_end {
-        msg.push(0x00);
-    }
-    let mut bit_length: usize = len1 * 8;
-    let mut bit_length_str: Vec<usize> = vec![bit_length % 0x100];
-    for _ in 0..7 {
-        bit_length /= 0x100;
-        bit_length_str.push(bit_length % 0x100);
-    }
-    for i in 0..8 {
-        msg.push(bit_length_str[7 - i] as u8);
-    }
-    let group_count: usize = (((msg.len() as f32) / 64.0).round()) as usize;
-    let mut b: Vec<Vec<u32>> = Vec::new();
-    for i in 0..group_count {
-        b.push(msg[(i * 64)..((i + 1) * 64)].iter().map(|x| x.to_be() as u32).collect());
-    }
-    let mut v: Vec<Vec<u32>> = Vec::new();
-    v.push(iv);
-    for i in 0..group_count {
-        v.push(sm3_cf(&v[i], &b[i]));
-    }
-    let y = &v[group_count - 1 + 1];
-    y.into_iter().flat_map(|x| x.to_be_bytes()).collect()
-}
-
 pub fn sm3_hash_raw(msg: &[u8]) -> Vec<u8> {
     let iv: Vec<u32> = vec![
     1937774191, 1226093241, 388252375, 3666478592,
