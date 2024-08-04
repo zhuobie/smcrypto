@@ -1,5 +1,4 @@
 use std::vec;
-use rayon::prelude::*;
 
 fn sm3_ff_j(x: u32, y: u32, z: u32, j: u32) -> u32 {
     let mut ret = 0;
